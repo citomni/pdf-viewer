@@ -1,0 +1,82 @@
+citomni/pdf-viewer - CitOmni provider package
+Copyright (c) 2026-present Lars Grove Mortensen
+Licensed under the MIT License (see LICENSE).
+
+------------------------------------------------------------
+Third-Party
+------------------------------------------------------------
+This package targets the CitOmni Framework, which is licensed separately under
+the MIT License.
+
+The MIT License above covers this package's own files. Everything below
+assets/vendor/ is an unmodified copy of a third-party release, redistributed
+under that component's own license, and is served to the browser by the app
+that installs this package. tools/vendor-sync.sh lists the exact selection and
+pins every source archive by SHA-256.
+
+PDF.js 6.4.299 (npm: pdfjs-dist) - https://github.com/mozilla/pdf.js
+Location: assets/vendor/pdfjs/
+  - build/, web/: PDF.js, Copyright Mozilla Foundation.
+    Apache License 2.0 (LICENSE).
+  - wasm/openjpeg.wasm, wasm/openjpeg_nowasm_fallback.js: OpenJPEG,
+    BSD 2-Clause (wasm/LICENSE_OPENJPEG); PDF.js wrapper, Copyright Mozilla
+    Foundation, BSD 2-Clause (wasm/LICENSE_PDFJS_OPENJPEG).
+  - wasm/jbig2.wasm: PDFium JBIG2 decoder, Copyright The PDFium Authors,
+    BSD 3-Clause (wasm/LICENSE_JBIG2); PDF.js wrapper, Copyright Mozilla
+    Foundation, Apache License 2.0 (wasm/LICENSE_PDFJS_JBIG2).
+  - wasm/qcms_bg.wasm: qcms, Copyright Mozilla Corporation and Marti Maria,
+    MIT (wasm/LICENSE_QCMS); PDF.js wrapper, MIT (wasm/LICENSE_PDFJS_QCMS).
+  - cmaps/: CMap resources, Copyright Adobe Systems Incorporated,
+    BSD 3-Clause (cmaps/LICENSE).
+  - standard_fonts/Foxit*.pfb: Copyright The PDFium Authors, BSD 3-Clause
+    (standard_fonts/LICENSE_FOXIT).
+  - standard_fonts/LiberationSans-*.ttf: Liberation fonts, Copyright Red Hat,
+    Inc., GNU General Public License v2 with the exceptions stated in
+    standard_fonts/LICENSE_LIBERATION (font embedding exception).
+    LIBERATION is a trademark of Red Hat, Inc.
+  - iccs/CGATS001Compat-v2-micro.icc: CC0 1.0 Universal (iccs/LICENSE).
+
+Tesseract.js 7.0.0 (npm: tesseract.js) - https://github.com/naptha/tesseract.js
+Location: assets/vendor/tesseract/
+  - tesseract.esm.min.js, worker.min.js: Apache License 2.0 (LICENSE.md).
+  - Bundled into these files, as listed in tesseract.min.js.LICENSE.txt and
+    worker.min.js.LICENSE.txt: regenerator-runtime (MIT, Facebook, Inc.),
+    buffer (MIT, Feross Aboukhadijeh), ieee754 (BSD 3-Clause, Feross
+    Aboukhadijeh), zlib.js (MIT, imaya).
+
+tesseract.js-core 7.0.0 (npm: tesseract.js-core)
+https://github.com/naptha/tesseract.js-core
+Location: assets/vendor/tesseract-core/
+  - The three LSTM-only WebAssembly builds: Apache License 2.0 (LICENSE).
+  - The builds statically link libraries that tesseract.js-core compiles
+    from git submodules (tag v7.0.0; its committed builds are byte-identical
+    to the npm release). Their license texts are in licenses/tesseract-core/:
+      Tesseract OCR (fork Balearica/tesseract, 2a9c1c4)
+                                   Apache License 2.0 (tesseract-core/LICENSE)
+      Leptonica (4af068b)          leptonica.txt
+      libjpeg, IJG release 9a      libjpeg.txt (README excerpt: LEGAL ISSUES)
+      libpng (a37d483)             libpng.txt
+      libtiff (b51bb15)            libtiff.txt
+      libwebp (20ef03e)            libwebp.txt, libwebp-PATENTS.txt
+      giflib (fa37672)             giflib.txt
+      zlib 1.2.12                  zlib.txt (README excerpt: copyright notice)
+      OpenLibm (ae2d916)           openlibm.txt
+  - This software is based in part on the work of the Independent JPEG Group.
+
+Tesseract language data (npm: @tesseract.js-data/dan 1.0.0,
+@tesseract.js-data/eng 1.0.0) - https://github.com/naptha/tessdata
+Location: assets/vendor/tessdata/
+  - dan.traineddata.gz, eng.traineddata.gz (variant 4.0.0_best_int): the npm
+    packages are published under the MIT License; the models are integerized
+    versions of tesseract-ocr/tessdata_best, Apache License 2.0
+    (assets/vendor/tesseract-core/LICENSE has the license text). See
+    NOTICE.txt in that folder.
+
+------------------------------------------------------------
+Trademarks
+------------------------------------------------------------
+Trademark rights are separate from copyright and open-source license rights.
+See TRADEMARKS.md for the CitOmni trademark notice applicable to this package.
+
+For questions about this software's license, contact the copyright holder named
+above.

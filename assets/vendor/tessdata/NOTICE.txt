@@ -1,0 +1,5 @@
+dan.traineddata.gz and eng.traineddata.gz are taken unmodified from the npm packages
+@tesseract.js-data/dan@1.0.0 and @tesseract.js-data/eng@1.0.0, folder 4.0.0_best_int
+(Tesseract.js' default LSTM data). The npm packages are published under the MIT license;
+the models originate from tesseract-ocr/tessdata_best (Apache License 2.0), converted
+to integer precision.

@@ -1,0 +1,154 @@
+/*
+ * This file is part of the CitOmni framework.
+ * Low overhead, high performance, ready for anything.
+ *
+ * For more information, visit https://github.com/citomni
+ *
+ * Copyright (c) 2012-present Lars Grove Mortensen
+ * SPDX-License-Identifier: MIT
+ *
+ * For full copyright, trademark, and license information,
+ * please see the LICENSE file distributed with this source code.
+ */
+
+/* Reader frame layout. Loaded after pdf_viewer.css. */
+
+:root {
+	--bar-h: 36px;
+	--bg: #e9ecef;
+	--fg: #1f2328;
+	--box-text: rgba(0, 92, 230, 0.85);
+	--box-ocr: rgba(214, 102, 0, 0.9);
+}
+
+html,
+body {
+	margin: 0;
+	height: 100%;
+	background: var(--bg);
+	color: var(--fg);
+	font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#toolbar {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--bar-h);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 8px;
+	background: #fff;
+	border-bottom: 1px solid #ccd;
+	box-sizing: border-box;
+	z-index: 10;
+}
+
+#toolbar button {
+	min-width: 30px;
+	height: 26px;
+	font: inherit;
+	cursor: pointer;
+}
+
+#toolbar label {
+	margin-left: 8px;
+	user-select: none;
+}
+
+#status {
+	margin-left: auto;
+	color: #555;
+}
+
+#viewerContainer {
+	position: absolute;
+	top: var(--bar-h);
+	left: 0;
+	right: 0;
+	bottom: 0;
+	overflow: auto;
+}
+
+#imageContainer {
+	position: absolute;
+	top: var(--bar-h);
+	left: 0;
+	right: 0;
+	bottom: 0;
+	overflow: auto;
+	padding: 8px;
+	box-sizing: border-box;
+}
+
+.imagePage {
+	position: relative;
+	width: 100%;
+	margin: 0 auto;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	background: #fff;
+}
+
+.imagePage img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.boxLayer {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 5;
+}
+
+.box {
+	position: absolute;
+	box-sizing: border-box;
+	border: 1px solid var(--box-text);
+}
+
+.box.boxOcr {
+	border-color: var(--box-ocr);
+}
+
+body.noBoxes .boxLayer {
+	display: none;
+}
+
+.pageWarning {
+	position: absolute;
+	inset: 0;
+	z-index: 6;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 24px;
+	background: repeating-linear-gradient(45deg, rgba(200, 0, 0, 0.18) 0 12px, rgba(200, 0, 0, 0.06) 12px 24px);
+	color: #900;
+	font-weight: 600;
+	font-size: 15px;
+	text-align: center;
+	pointer-events: none;
+}
+
+.message {
+	position: absolute;
+	top: 40%;
+	left: 0;
+	right: 0;
+	text-align: center;
+	padding: 0 16px;
+	color: #444;
+	font-size: 15px;
+}
+
+.message.error {
+	color: #a00;
+}
+
+[hidden] {
+	display: none !important;
+}

@@ -1,0 +1,75 @@
+{
+    "name": "citomni/pdf-viewer",
+    "description": "Browser-based PDF viewer for CitOmni apps, with image support, text extraction, and OCR powered by PDF.js and Tesseract.js.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "citomni",
+        "php",
+        "javascript",
+        "pdf",
+        "pdf-viewer",
+        "pdfjs",
+        "tesseractjs",
+        "ocr",
+        "text-extraction",
+        "document-viewer",
+        "image-viewer",
+        "browser-based",
+        "client-side",
+        "sandboxed-iframe",
+        "document-security"
+    ],
+    "homepage": "https://github.com/citomni/pdf-viewer",
+    "support": {
+        "email": "support@citomni.com",
+        "issues": "https://github.com/citomni/pdf-viewer/issues",
+        "source": "https://github.com/citomni/pdf-viewer",
+        "docs": "https://github.com/citomni/pdf-viewer/blob/main/README.md",
+        "security": "https://github.com/citomni/.github/blob/main/SECURITY.md"
+    },
+    "require": {
+        "php": "^8.5",
+        "citomni/http": "^1.0",
+        "citomni/kernel": "^1.0"
+    },
+    "require-dev": {
+        "citomni/cli": "^1.0"
+    },
+    "suggest": {
+        "citomni/cli": "Provides the pdf-viewer:verify command (checks the installed assets after a deploy)."
+    },
+    "autoload": {
+        "psr-4": {
+            "CitOmni\\PdfViewer\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CitOmni\\PdfViewer\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "@php tests/run.php",
+        "bundle:build": "@php tools/build-bundle.php",
+        "bundle:check": "@php tools/build-bundle.php --check"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        }
+    },
+    "authors": [
+        {
+            "name": "Lars Grove Mortensen",
+            "email": "lars@grove-mortensen.dk",
+            "homepage": "https://www.citomni.com",
+            "role": "Developer"
+        }
+    ]
+}
