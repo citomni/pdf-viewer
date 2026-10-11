@@ -16,7 +16,8 @@ declare(strict_types=1);
 /*
  * Fixtures for the suites. Not a suite of its own.
  *
- * - check() and same() record and print one result line per case.
+ * - check() and same() record and print one result line per case; skip() records a case
+ *   that cannot run in this installation.
  * - FixtureServer runs PHP's built-in web server with a suite's router script, for
  *   behavior that only exists in a real request: status line, response headers, bodies.
  * - writeApp() creates a minimal CitOmni application root (config, public, var) that
@@ -31,8 +32,8 @@ namespace CitOmni\PdfViewer\Tests\Support;
 /** Package root (the directory holding composer.json). */
 const PACKAGE_ROOT = __DIR__ . '/../..';
 
-/** @var array{passed: int, failed: int} */
-$GLOBALS['citomniPdfViewerTestTotals'] = ['passed' => 0, 'failed' => 0];
+/** @var array{passed: int, failed: int, skipped: int} */
+$GLOBALS['citomniPdfViewerTestTotals'] = ['passed' => 0, 'failed' => 0, 'skipped' => 0];
 
 
 /**
@@ -55,6 +56,19 @@ function check(string $name, callable $test): void {
 
 
 /**
+ * Record a case that cannot run in this installation and print SKIP.
+ *
+ * @param  string  $name
+ * @param  string  $reason
+ * @return void
+ */
+function skip(string $name, string $reason): void {
+	$GLOBALS['citomniPdfViewerTestTotals']['skipped']++;
+	\fwrite(\STDOUT, "SKIP {$name}: {$reason}\n");
+}
+
+
+/**
  * Strict comparison with a readable failure message.
  *
  * @throws \RuntimeException  When the values differ.
@@ -73,7 +87,7 @@ function same(mixed $expected, mixed $actual, string $label = ''): void {
  */
 function finish(): never {
 	$t = $GLOBALS['citomniPdfViewerTestTotals'];
-	\fwrite(\STDOUT, "{$t['passed']} passed, {$t['failed']} failed\n");
+	\fwrite(\STDOUT, "{$t['passed']} passed, {$t['failed']} failed" . ($t['skipped'] > 0 ? ", {$t['skipped']} skipped" : '') . "\n");
 	exit($t['failed'] === 0 ? 0 : 1);
 }
 

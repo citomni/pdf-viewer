@@ -25,6 +25,7 @@ use function CitOmni\PdfViewer\Tests\Support\headerValues;
 use function CitOmni\PdfViewer\Tests\Support\removeTree;
 use function CitOmni\PdfViewer\Tests\Support\requireVendor;
 use function CitOmni\PdfViewer\Tests\Support\same;
+use function CitOmni\PdfViewer\Tests\Support\skip;
 use function CitOmni\PdfViewer\Tests\Support\strictErrors;
 use function CitOmni\PdfViewer\Tests\Support\tempDir;
 use function CitOmni\PdfViewer\Tests\Support\writeApp;
@@ -53,6 +54,7 @@ $assets = '/_pdf-viewer/assets/' . $key . '/';
 $root = tempDir('http');
 $server = null;
 $ciServer = null;
+$fmServer = null;
 
 /** First value of a header, or null. */
 $header = static fn (array $r, string $name): ?string => headerValues($r['headers'], $name)[0] ?? null;
@@ -70,6 +72,12 @@ try {
 	writeApp($root . '/ci', ['http' => ['router_case_insensitive' => true]]);
 	$server = new FixtureServer($root . '/app/public', __DIR__ . '/server.php');
 	$ciServer = new FixtureServer($root . '/ci/public', __DIR__ . '/server.php');
+	// citomni/http's Fetch Metadata policy exists from the version that ships this class.
+	$fetchMetadata = \class_exists(\CitOmni\Http\Policy\FetchMetadataPolicy::class);
+	if ($fetchMetadata) {
+		writeApp($root . '/fm', ['security' => ['fetch_metadata' => ['enabled' => true]]]);
+		$fmServer = new FixtureServer($root . '/fm/public', __DIR__ . '/server.php');
+	}
 	$origin = $server->baseUrl;
 
 
@@ -256,9 +264,32 @@ try {
 		same(200, $ciServer->request('GET', $assets . 'READER/READER.MJS')['status']);
 	});
 
+
+	// -- 4. With citomni/http's Fetch Metadata policy on --------------------------------
+
+	$fmName = 'With the Fetch Metadata policy on, the frame\'s asset requests pass and other cross-site requests are refused';
+	if (!$fetchMetadata) {
+		skip($fmName, 'citomni/http without Policy\FetchMetadataPolicy');
+	} else {
+		check($fmName, function () use ($fmServer, $frame, $assets): void {
+			// Requests of the opaque-origin frame and its workers are cross-site.
+			$frameRequest = ['Sec-Fetch-Site' => 'cross-site', 'Sec-Fetch-Mode' => 'cors', 'Sec-Fetch-Dest' => 'script', 'Accept' => 'application/json'];
+			same(200, $fmServer->request('GET', $assets . 'reader/reader.mjs', $frameRequest)['status'], 'asset');
+			same(200, $fmServer->request('HEAD', $assets . 'vendor/tessdata/dan.traineddata.gz', $frameRequest)['status'], 'asset HEAD');
+			same(404, $fmServer->request('GET', $assets . 'reader/missing.mjs', $frameRequest)['status'], 'unknown asset still reaches the route');
+			// The host page loads the frame same-origin; nothing else is exempt.
+			$embed = ['Sec-Fetch-Mode' => 'navigate', 'Sec-Fetch-Dest' => 'iframe', 'Accept' => 'application/json'];
+			same(200, $fmServer->request('GET', $frame, ['Sec-Fetch-Site' => 'same-origin'] + $embed)['status'], 'frame from the host page');
+			same(403, $fmServer->request('GET', $frame, ['Sec-Fetch-Site' => 'cross-site'] + $embed)['status'], 'frame embedded by another site');
+			same(403, $fmServer->request('POST', $assets . 'reader/reader.mjs', $frameRequest)['status'], 'only GET and HEAD are exempt');
+			same(403, $fmServer->request('GET', '/_pdf-viewer/other', $frameRequest)['status'], 'only the asset prefix is exempt');
+		});
+	}
+
 } finally {
 	$server?->stop();
 	$ciServer?->stop();
+	$fmServer?->stop();
 	removeTree($root);
 }
 

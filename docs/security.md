@@ -55,7 +55,7 @@ anywhere: no cloud OCR, no CDN, no third-party host.
 | One frame per document | A new frame for every document. It is removed on close, cancel, a terminal error or a timeout, and its OCR worker dies with it. Messages from a removed frame are ignored. | `PdfViewerHost` |
 | Host-owned timeouts | The host removes a frame that does not start, goes silent or takes too long. | `pdf_viewer.host.*` |
 | Resource limits | File size, pages, image pixels, canvas size, text volume, OCR time. | `pdf_viewer.limits.*` |
-| App: Fetch Metadata | Rejects cross-site requests to app routes. Required for WebKit, where the cookie layer does not hold. | The app ([below](#fetch-metadata)) |
+| App: Fetch Metadata | citomni/http's `security.fetch_metadata` policy rejects cross-site requests to app routes; this package exempts its asset route. Required for WebKit, where the cookie layer does not hold. | The app ([below](#fetch-metadata)) |
 
 
 ## Frame CSP
@@ -237,6 +237,7 @@ the header PHP sends):
   a page on another origin than the configured one (`PdfViewerHost` throws); a document
   route returning another content type (`unsupported`); a bundle without the JPEG 2000
   decoders (`decoder_missing` on page 1, not terminal).
+- **With citomni/http's Fetch Metadata policy on:** see [Fetch Metadata](#fetch-metadata).
 - iOS Safari ran against the prototype only.
 
 
@@ -255,7 +256,8 @@ the production part of W1 pass). Session isolation in WebKit rests on:
 2. the sandbox (no forms, popups or top navigation);
 3. the host page's narrow `frame-src`;
 4. frame and asset routes that never use the session;
-5. the app's Fetch Metadata check (below), which works in WebKit.
+5. the app's Fetch Metadata policy (below), which also stops these requests in WebKit
+   (measured in WebKitGTK).
 
 One layer fewer than in Chromium. A frame on a separate domain would most likely not help:
 WebKit would judge its requests by the top-level site as well (inferred, not tested).
@@ -279,47 +281,63 @@ tested browser, including WebKit, where the cookies came along. A server-side ch
 that header closes the gap the cookie layer leaves in WebKit, and is good practice in any
 case.
 
-Policy for every app route:
-
-- Allow requests without `Sec-Fetch-Site` (older browsers, server-to-server calls such as
-  webhooks). They are protected by the usual means (authentication, CSRF tokens).
-- Allow `same-origin`, `same-site` and `none` (typed URL, bookmark).
-- Allow cross-site top-level navigations: `Sec-Fetch-Mode: navigate`,
-  `Sec-Fetch-Dest: document`, GET or HEAD.
-- Reject everything else (403).
-- Exempt the viewer's routes: every path below `<base path>/_pdf-viewer/`
-  (`\CitOmni\PdfViewer\Constant\Route::PREFIX`). The frame's own asset requests are
-  cross-site by design.
-
-A sketch in plain PHP (adapt it to where your app handles every request before dispatch):
+citomni/http has this check as an optional, global policy that runs in `Kernel::run()`
+before maintenance and routing. Switch it on in the app's `/config/citomni_http_cfg.php`
+and rebuild the compiled config:
 
 ```php
-/**
- * Fetch Metadata resource isolation: whether a request may reach an app route.
- *
- * @param  array<string, mixed>  $server  $_SERVER
- * @return bool
- */
-function fetchMetadataAllows(array $server): bool {
-	$site = $server['HTTP_SEC_FETCH_SITE'] ?? null;
-	if ($site === null || \in_array($site, ['same-origin', 'same-site', 'none'], true)) {
-		return true;
-	}
-	$method = $server['REQUEST_METHOD'] ?? 'GET';
-	return ($server['HTTP_SEC_FETCH_MODE'] ?? null) === 'navigate'
-		&& ($server['HTTP_SEC_FETCH_DEST'] ?? null) === 'document'
-		&& ($method === 'GET' || $method === 'HEAD');
-}
+return [
+	'security' => [
+		'fetch_metadata' => [
+			'enabled'         => true,
+			'allow_same_site' => false,
+			'allow_missing'   => true,
+		],
+	],
+];
 ```
 
-Watch for cross-site POST navigations the app expects (for example payment or identity
-providers that return with an auto-submitted form): they need an explicit exception for
-that route. Also:
+With this configuration the kernel lets through same-origin requests, requests the user
+started (`Sec-Fetch-Site: none`), requests without Fetch Metadata (older browsers,
+server-to-server calls) and cross-site GET/HEAD top-level navigations. Everything else
+from another site is a 403 unless a named exemption matches its path and method. It is
+independent of `security.csrf.fetch_metadata`, which only runs inside CSRF verification.
+The citomni/http README describes the policy in full.
 
-- No state-changing GET routes. A no-cors GET from the frame sends no `Origin` header, so
-  origin checks do not cover GET.
-- Reject `Origin: null` on state-changing methods (CitOmni's CSRF origin check does).
+This package contributes one exemption, `pdf_viewer_assets`: GET and HEAD below
+`Route::ASSETS`. The frame route needs none, because the host page loads it same-origin,
+and the app's document routes must not get one, because only the host page fetches them.
+Keep the asset prefix for this package's stateless route. The package never switches the
+policy on.
+
+Check after every deploy that the policy is active. A citomni/http version without it
+ignores the setting, and a compiled config from an older version counts as off until it
+is rebuilt:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Sec-Fetch-Site: cross-site' \
+  -H 'Sec-Fetch-Mode: no-cors' -H 'Sec-Fetch-Dest: image' https://www.example.com/
+# 403
+```
+
+Measured with the policy on (Apache with PHP as FastCGI, Chromium 141 and WebKitGTK
+2.52.6): from a sandboxed opaque-origin frame, credentialed requests to app routes
+(fetch, image, POST, a document route) were 403 in both engines, while the viewer's
+asset route answered. Without the policy, the same requests reached the app in WebKitGTK.
+From another site, images, fetches, iframes and POST form submissions were 403; links
+and GET form navigations went through. The viewer passed all 23 test documents in both
+engines with the policy on.
+
+Watch for browser-based cross-site POST returns the app expects (payment or identity
+providers that come back with an auto-submitted form): they need an exemption for that
+route, and that route still needs its own verification. Also:
+
+- No state-changing GET routes: cross-site top-level navigations are allowed.
+- CSRF verification on every state-changing request. CitOmni's CSRF origin check treats
+  `Origin: null` as absent and falls back to the Referer on HTTPS; it does not reject a
+  null origin by itself.
 - Session cookie `SameSite=Lax` or `Strict`, never `None`.
+- Fetch Metadata does not address the shared CacheStorage or the exfiltration risks below.
 
 
 ## Residual risks

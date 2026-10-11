@@ -290,15 +290,17 @@ forms or top navigation), the frame's CSP (scripts, styles, fetches and images f
 asset path only), one frame per document, a nonce handshake, and validation of everything
 the frame sends. The app completes it:
 
-1. **Reject cross-site requests with Fetch Metadata** on every app route. All requests
-   from the frame and its workers carry `Sec-Fetch-Site: cross-site`. Allow requests
-   without the header (older browsers), `same-origin`, `same-site`, `none`, and cross-site
-   top-level navigations (`Sec-Fetch-Mode: navigate`, `Sec-Fetch-Dest: document`,
-   GET/HEAD). The viewer's own routes must stay reachable cross-site; they are served by
-   this package's controllers, so a check in your own base controller leaves them alone.
-   Required before you enable WebKit; see [`docs/security.md`](docs/security.md).
-2. **No state-changing GET routes**, and reject `Origin: null` on state-changing methods
-   (CitOmni's CSRF origin check does).
+1. **Switch on citomni/http's Fetch Metadata policy** (`security.fetch_metadata.enabled`
+   in `/config/citomni_http_cfg.php`, then rebuild the compiled config). It rejects
+   requests from the frame and its workers to every app route, also in WebKit, where
+   the frame's requests carry the app's cookies. This package adds one exemption to it:
+   GET and HEAD below the asset route. It never switches the policy on, and the app's
+   document routes need no exemption (only the host page fetches them). Required before
+   you enable WebKit. A citomni/http version without the policy ignores the setting; see
+   [`docs/security.md`](docs/security.md#fetch-metadata) for how to check that it is active.
+2. **No state-changing GET routes**, and CSRF verification on every state-changing
+   request. CitOmni's CSRF origin check treats `Origin: null` as absent and falls back
+   to the Referer on HTTPS; it does not reject a null origin by itself.
 3. **Session cookie `SameSite=Lax` or `Strict`**, never `None` (CitOmni's default is
    `Lax`). Chromium then sends no session cookie from the frame.
 4. **Host page CSP** with a narrow `frame-src` (see above). Never `allow-same-origin`.
@@ -360,7 +362,7 @@ node --test tests/js/*.test.mjs
 | Suite | Covers |
 |---|---|
 | `tests/bundle` | Generated manifest current and matching the files; publishable paths; routes per depth; config baseline. No Composer needed. |
-| `tests/http` | Frame and asset routes through the real CitOmni HTTP kernel in PHP's built-in server: headers, CSP, 404/405/304, HEAD, traversal attempts, mount path, case-insensitive routing. |
+| `tests/http` | Frame and asset routes through the real CitOmni HTTP kernel in PHP's built-in server: headers, CSP, 404/405/304, HEAD, traversal attempts, mount path, case-insensitive routing, and the asset exemption with citomni/http's Fetch Metadata policy on (skipped with a citomni/http version without the policy). |
 | `tests/service` | `pdfViewer` service: URLs, origin, config mapping, fail-fast validation. |
 | `tests/verify` | `pdf-viewer:verify` through the real CLI kernel. |
 | `tests/js` | Protocol, host validation, text rule, stream-iteration shim, PDF.js worker build shape, engine policy, preload allowlist against the manifest (Node.js 22+). |

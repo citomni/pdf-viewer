@@ -28,7 +28,9 @@ use CitOmni\PdfViewer\Service\PdfViewer;
  *
  * Behavior:
  * - MAP_HTTP registers the pdfViewer service (URLs, host/reader configuration, CSP sources).
- * - CFG_HTTP ships the baseline of every pdf_viewer.* key the package reads.
+ * - CFG_HTTP ships the baseline of every pdf_viewer.* key the package reads, and the
+ *   security.fetch_metadata exemption for the asset route (used only when the app
+ *   switches on citomni/http's Fetch Metadata policy).
  * - ROUTES_HTTP registers the frame route and the asset route (one regex route per path
  *   depth below the asset base).
  * - COMMANDS_CLI registers pdf-viewer:verify.
@@ -141,6 +143,31 @@ final class Registry {
 			// details) as 'diagnostics' events on the host. CSP violations, storage attempts,
 			// errors and decoder warnings are always reported.
 			'diagnostics' => false,
+		],
+
+
+		/*
+		 *------------------------------------------------------------------
+		 * FETCH METADATA EXEMPTION (citomni/http security.fetch_metadata)
+		 *------------------------------------------------------------------
+		 *
+		 * The reader frame has an opaque origin, so every request it and its workers make
+		 * for the bundle is cross-site. When the app switches on citomni/http's Fetch
+		 * Metadata policy, this rule keeps the asset route reachable: GET and HEAD below
+		 * Route::ASSETS, nothing else. The frame route needs no rule (the host page loads
+		 * it same-origin), and the app's document routes must not get one (only the host
+		 * page fetches them). This package never switches the policy on.
+		 */
+		'security' => [
+			'fetch_metadata' => [
+				'exempt' => [
+					'pdf_viewer_assets' => [
+						'path'    => Route::ASSETS,
+						'match'   => 'prefix',
+						'methods' => ['GET', 'HEAD'],
+					],
+				],
+			],
 		],
 	];
 

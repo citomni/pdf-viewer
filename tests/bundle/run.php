@@ -158,4 +158,13 @@ check('CFG_HTTP ships a baseline for every pdf_viewer key the service reads', fu
 	same(Bundle::OCR_LANGUAGES, $cfg['ocr']['languages']);
 });
 
+check('The Fetch Metadata exemption covers only GET/HEAD below the asset route', function (): void {
+	$policy = Registry::CFG_HTTP['security']['fetch_metadata'];
+	same(['exempt'], \array_keys($policy), 'the app owns enabled/allow_* (never switched on here)');
+	same([
+		'pdf_viewer_assets' => ['path' => Route::ASSETS, 'match' => 'prefix', 'methods' => ['GET', 'HEAD']],
+	], $policy['exempt']);
+	same(['pdf_viewer', 'security'], \array_keys(Registry::CFG_HTTP), 'no other cfg contributions');
+});
+
 finish();
