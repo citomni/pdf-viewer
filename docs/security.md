@@ -246,8 +246,18 @@ the header PHP sends):
 **Finding.** WebKit sends all of the app's cookies, also `SameSite=Strict`, with requests
 from the sandboxed frame and its workers to the app's domain (A5, W1, W3). iOS Safari did
 so with "Prevent Cross-Site Tracking" on, and the requests carried
-`Sec-Fetch-Site: cross-site`. WebKit evidently decides SameSite by the top-level site, not
-by the frame's opaque origin. Every browser on iOS and iPadOS uses WebKit.
+`Sec-Fetch-Site: cross-site`. Every browser on iOS and iPadOS uses WebKit.
+
+**Against the cookie specification.** For the frame's own requests (A5), WebKit does what
+the draft prescribes: [RFC 6265bis](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html)
+(section 5.2.1) takes a sandboxed document's "site for cookies" from its URL, not from its
+opaque origin, so a frame on the app's own site is same-site with the app. Chromium, which
+withholds the cookies, is stricter than the draft, and untested engines may behave like
+WebKit. The workers are different. For a dedicated worker the draft (section 5.2.2.1) uses
+the document's site for cookies only when the worker's origin is same-site with it. The
+frame's blob workers inherit its opaque origin, so under the draft their requests are
+cross-site and carry no `Lax` or `Strict` cookies. In W1 and W3 WebKit deviates from the
+draft.
 
 **What still holds in WebKit.** With the real CSP no tested path reached the app (A6 and
 the production part of W1 pass). Session isolation in WebKit rests on:
@@ -259,8 +269,12 @@ the production part of W1 pass). Session isolation in WebKit rests on:
 5. the app's Fetch Metadata policy (below), which also stops these requests in WebKit
    (measured in WebKitGTK).
 
-One layer fewer than in Chromium. A frame on a separate domain would most likely not help:
-WebKit would judge its requests by the top-level site as well (inferred, not tested).
+One layer fewer than in Chromium. Whether a frame on a separate site would restore the
+cookie layer in WebKit is not tested. Under the draft it would: a frame whose URL is on
+another registrable domain gets an opaque site for cookies, so its requests carry no `Lax`
+or `Strict` cookies. The tests cannot show whether WebKit follows the draft here, because
+the frame and the top-level page were on the same site. A subdomain is same-site and would
+not help.
 
 **Shared CacheStorage (iOS Safari).** A marker that a taken-over frame wrote to
 CacheStorage from a worker could be read from a worker in a later frame (A13). It is not
